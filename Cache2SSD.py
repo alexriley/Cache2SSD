@@ -7,7 +7,14 @@ def PromptSourceDirectory():
     return input("Where would you like to cache from? (e.g. 'Your steam folder'/steamapps/common)\n->")
 def PromptDestDirectory():
     return input("Where to cache this to? (Select any directory on the SSD which you have write permissions for)\n->")
+def cache(Source, Destination):
+    #TODO
+    return
 
+def uncache(Source, Destination):
+    #TODO
+    return
+    
 def main():
     SourcesArgList = {'-src','-s','-source'}
     DestinationArgList = {'-d','-dest','-destination'}
