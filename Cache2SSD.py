@@ -17,7 +17,7 @@ DestinationArgList = {'-d','-dest','-destination'}
 SourceDirectory = ''
 DestinationDirectory = ''
 ConfigFileName = '.Cache2SSD.config'
-ConfigFile = open(ConfigFileName, "w+")
+ConfigFile = open(ConfigFileName, "a+")
     
 def PromptSourceDirectory():
     return input("Where would you like to cache from? (e.g. 'Your steam folder'/steamapps/common)\n->")
@@ -43,13 +43,14 @@ def ReadConfigFile():
                     print("Bad Config file, multiple Sources specified. Config file Ignored")
                     return ('','')
                 DestinationDirectory = line.replace("DESTINATION=","").replace("\n","")
-            line = ConfigFile.readline()
+        line = ConfigFile.readline()
     #Check values:
     if SourceDirectory != '' or DestinationDirectory != '':
         for x in {SourceDirectory, DestinationDirectory}:
             if x != '' and not exists(x):
                 print("Directory %s in config file does not exist, Config file ignored" % (x))
                 return ('','')
+    ConfigFile.close()
     return (SourceDirectory,DestinationDirectory)
         
                 
