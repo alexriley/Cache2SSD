@@ -15,6 +15,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 What it does: Easily copy a folder to a faster drive. By using symbolic links, it appears that the folder hasn't moved to any program that accesses it. When you need that space back, run Cache2SSD again to copy it back and remove the symbolic link.
 
+I took the idea from a program I used for the same purpose when I used Windows called 'Steam Mover' (available at http://www.traynier.com/software/steammover).
+
 This will probably work on Mac OS X with few revisions. I haven't tested in on a Mac, so I have no means of confirming this.
 
 Command line arguments: (Optional, if no directories are specified, the user will be prompted)
@@ -26,7 +28,7 @@ SOURCE=/BiggerDrive/Steam/steamapps/common/
 CACHE=/SSDcache/
 '
 
-If directories are specified in command line arguments and a config file, the command line arguments are used.
+If directories are specified in command line arguments and a file, the command line arguments are used.
 
 
 My usage case:
@@ -35,6 +37,7 @@ I have a 60GB SSD and a 1TB HDD for my files. I keep my steam library on the HDD
 Notes:
 Run the script in python3 - not python2. Ubuntu uses python2 for python *.py by default.
 Do not use this for anything important which you haven't backed up. While I've tested this and it works reliably for me, things may go wrong.
+Use absolute locations for Source and Cache directories (E.g. if Cache2SSD is in your home directory, use CACHE=/home/user/SSDCache/ and not CACHE=SSDCache/)
 
 TODO:
 GUI, probably in tkinter

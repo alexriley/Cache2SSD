@@ -20,179 +20,205 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 from os.path import isdir, exists
 
 import sys, os, shutil, platform, subprocess
-#Globals:
-errors = []
-SourcesArgList = {'-s','-src','-source'}
-CacheArgList = {'-c','-cache'}
-SourceDirectory = ''
-CacheDirectory = ''
-ConfigFileName = '.Cache2SSD.config'
-#The cached file is used to keep track of which folders are being cached on a drive
-#The file consists of folder names, seperated by newlines. It's stored in the cache directory
-CachedFilesName= '.Cache2SSD.Cachedlist' 
+
+class Cache2SSD:
+    def __init__(self,SourceDirectory='',CacheDirectory=''):
+        self.Source = SourceDirectory
+        self.Cache = CacheDirectory
     
-def PromptSourceDirectory():
-    return input("Where would you like to cache from? (e.g. 'Your steam folder'/steamapps/common)\n->")
-def PromptDestDirectory():
-    return input("Where to cache this to? (Select any directory on the SSD which you have read/write permissions for)\n->")
-def GetFilesList(SourceDir, CachedDir):
-    #returns 2 lists of filenames: 
-    SourceFilesList = os.listdir(SourceDir)
-    SourceFilesList.sort()
-    CachedFilesList = []
-    if exists(CachedDir+CachedFilesName):
-        CacheFile = open(CachedDir+CachedFilesName,'r')
+    
+    #Globals:
+    errors = []
+    SourcesArgList = {'-s','-src','-source'}
+    CacheArgList = {'-c','-cache'}
+    ConfigFileName = '.Cache2SSD.config'
+    #The cached file is used to keep track of which folders are being cached on a drive
+    #The file consists of folder names, separated by newlines. It's stored in the cache directory
+    CachedFilesName= '.Cache2SSD.Cachedlist' 
+     
+    def SetSourceDirectory(self,SourceDirectory):
+        self.Source = SourceDirectory
+    def GetSourceDirectory(self): return self.Source
+    
+    def SetCacheDirectory(self,CacheDirectory):
+        self.Cache = CacheDirectory
+    def GetCacheDirectory(self,CacheDirectory): return self.Cache
+        
+    def PromptSourceDirectory(self):
+        self.Source=input("Where would you like to cache from? (e.g. 'Your steam folder'/steamapps/common)\n->")
+    def PromptCacheDirectory(self):
+        self.Cache=input("Where to cache this to? (Select any directory on the SSD which you have read/write permissions for)\n->")
+    def GetFilesList(self):
+        #returns 2 lists of filenames
+        SourceFilesList = os.listdir(self.Source)
+        SourceFilesList.sort()
+        CachedFilesOnDisk = os.listdir(self.Cache)
+        CachedFilesList = []
+
+        
+        if exists(self.Cache+self.CachedFilesName):
+            CacheFile = open(self.Cache+self.CachedFilesName,'r')
+            line = CacheFile.readline()
+            while line:
+                CachedFilesList.append(line.replace("\n",""))
+                line = CacheFile.readline()
+            CacheFile.close()
+        #List comprehensions:
+        #CachedFilesList is all that are in the Source and Cache directory, and listed in the cache file
+        CachedFilesList = [x for x in CachedFilesList if x in SourceFilesList and x in CachedFilesOnDisk]
+        CachedFilesList.sort()
+        #Files that have been cached will appear in both the SourceFileslist and the CachedFilesList
+        #SourceFilesList is all items from SourceFilesList that are not in CachedFilesList
+        SourceFilesList = [x for x in SourceFilesList if x not in CachedFilesList] 
+        return(SourceFilesList,CachedFilesList)
+         
+    def ReadConfigFile(self):
+        ConfigFile = open(self.ConfigFileName, "a+")
+        #Returns tuple if 
+        ConfigFile.seek(0,0) # go to the beginning of the file
+        line=ConfigFile.readline()
+        SourceDirectory = ''
+        CacheDirectory = ''
+        #Parse file:
+        while line:
+            if line[0] != '#': #for comments
+                if "SOURCE=" in line:
+                    if SourceDirectory != '':
+                        print("Bad Config file, multiple Sources specified. Config file Ignored")
+                        ConfigFile.close()
+                        return ('','')
+                    SourceDirectory = line.replace("SOURCE=","").replace("\n","")
+                elif "CACHE=" in line:
+                    if CacheDirectory != '':
+                        print("Bad Config file, multiple Sources specified. Config file Ignored")
+                        ConfigFile.close()
+                        return ('','')
+                    CacheDirectory = line.replace("CACHE=","").replace("\n","")
+            line = ConfigFile.readline()
+        if not (SourceDirectory.endswith('/')):
+            SourceDirectory += '/'
+        if not (CacheDirectory.endswith('/')):
+            CacheDirectory += '/'
+        #Check values:
+        if SourceDirectory != '' or CacheDirectory != '':
+            for x in {SourceDirectory, CacheDirectory}:
+                if x != '' and not exists(x):
+                    print("Directory %s in config file does not exist. Config file ignored" % (x))
+                    return ('','')
+        ConfigFile.close()
+        return (SourceDirectory,CacheDirectory)
+             
+                     
+             
+             
+    def cache(self,Source,Cache):
+        #Source is the folder in SourceDirectory which will be copied to Cache
+        #FolderName = Cache.replace(CacheDirectory,"") #String of the folder user selected (e.g. Half-Life)
+        
+        #FolderName is everything in Cache after the last occurrence of '/' to the end:
+        #e.g. if cache is /BigDrive/Half-Life, Folder name is Half-Life
+        FolderName = Cache[Cache[0:len(Cache)-1].rindex("/")+1:] #ADDED, TEST THIS
+        #Copy the directory from source to Cache    
+        if exists(Cache):
+            print("ERROR: %s already exists." % Cache)
+            return False
+        print("Copying %s, This make take a few minutes\n" % (FolderName))
+        try:
+            shutil.move(Source,Cache)
+        except OSError as why:
+            self.errors.extend(str(why))
+        if self.errors:
+            print("Directory not copied\nERRORS:")
+            for x in self.errors:
+                print("%s", x)
+            return False
+         
+        #Create symbolic link
+        if(exists(Source)):
+            print("%s Should have been moved, but wasn't",Source)
+            return False
+         
+        ShellSymLink = ["ln", "-s", Cache, Source]
+         
+        #print("Shell command:\n%s" % (ShellSymLink)) #TESTING
+        subprocess.call(ShellSymLink)
+         
+        #Add this file to the list of cached files
+        CacheFile = open(CacheDirectory+self.CachedFilesName,'a')
+        CacheFile.write(FolderName+'\n')
+        CacheFile.close()
+         
+        return True
+     
+    def uncache(self,Source, Cache):
+        '''
+        Source is a symlink to Cache
+         
+        Pseudocode:
+        Check that Source is a symlink. Return false if not
+         
+        Otherwise:
+        Remove source symlink
+        Move Cache to Source
+        Delete Cache
+        Remove Cache from the Cache List file
+        return true
+        '''  
+        #CachedFolderName = Cache.replace(CacheDirectory,"")
+        #CachedFolderName is everything in Cache after the last occurrence of '/' to the end:
+        #e.g. if cache is /BigDrive/Half-Life, Folder name is Half-Life
+        CachedFolderName = Cache[Cache[0:len(Cache)-1].rindex("/")+1:] #ADDED, TEST THIS
+        if not os.path.islink(Source):
+            return False
+         
+        RemoveSymLinkCommand = ['rm', '-f', Source] # NOTE: this removes the symlink, it doesn't delete any files
+                    
+        subprocess.call(RemoveSymLinkCommand) #This should wait for the subprocess to complete before continuing
+        if(exists(Source)):
+            print("%s Should have been moved, but wasn't" % Source)
+            return False
+        print("Copying %s, This make take a few minutes\n" % (CachedFolderName))
+        try:
+            shutil.move(Cache, Source)
+        except OSError as why:
+            self.errors.extend(str(why))
+        if self.errors:
+            print("Directory not copied\nERRORS:")
+            for x in self.errors:
+                print("%s", x)
+            return False
+        #Update the cache list file
+        #Get all lines from the file
+        CacheFile = open(CacheDirectory+self.CachedFilesName, 'r')
+        CacheFileLines = []
         line = CacheFile.readline()
         while line:
-            CachedFilesList.append(line.replace("\n",""))
+            CacheFileLines.append(line)
             line = CacheFile.readline()
         CacheFile.close()
-    CachedFilesList = [x for x in CachedFilesList if x in SourceFilesList]
-    #Files that have been cached will appear in both the SourceFileslist and the CachedFilesList
-    #The following list comprehension removes all elements from SourceFilesList that are in CachedFilesList
-    SourceFilesList = [x for x in SourceFilesList if x not in CachedFilesList] 
-    return(SourceFilesList,CachedFilesList)
-    
-def ReadConfigFile():
-    ConfigFile = open(ConfigFileName, "a+")
-    #Returns tuple if 
-    ConfigFile.seek(0,0) # go to the beginning of the file
-    line=ConfigFile.readline()
-    SourceDirectory = ''
-    CacheDirectory = ''
-    #Parse file:
-    while line:
-        if line[0] != '#': #for comments
-            if "SOURCE=" in line:
-                if SourceDirectory != '':
-                    print("Bad Config file, multiple Sources specified. Config file Ignored")
-                    ConfigFile.close()
-                    return ('','')
-                SourceDirectory = line.replace("SOURCE=","").replace("\n","")
-            elif "CACHE=" in line:
-                if CacheDirectory != '':
-                    print("Bad Config file, multiple Sources specified. Config file Ignored")
-                    ConfigFile.close()
-                    return ('','')
-                CacheDirectory = line.replace("CACHE=","").replace("\n","")
-        line = ConfigFile.readline()
-    if not (SourceDirectory.endswith('/')):
-        SourceDirectory += '/'
-    if not (CacheDirectory.endswith('/')):
-        CacheDirectory += '/'
-    #Check values:
-    if SourceDirectory != '' or CacheDirectory != '':
-        for x in {SourceDirectory, CacheDirectory}:
-            if x != '' and not exists(x):
-                print("Directory %s in config file does not exist. Config file ignored" % (x))
-                return ('','')
-    ConfigFile.close()
-    return (SourceDirectory,CacheDirectory)
         
-                
+        CacheFileLines.sort()
+        #Add back all lines except for the one just uncached
+        CacheFile = open(CacheDirectory+self.CachedFilesName,'w')
+        for line in CacheFileLines:
+            if line.replace("\n","") != CachedFolderName:
+                CacheFile.write(line)
+        CacheFile.close()
         
+        return True
         
-def cache(Source, Cache):
-    FolderName = Cache.replace(CacheDirectory,"") #String of the folder user selected (e.g. Half-Life)
-    #Copy the directory from source to Cache    
-    if exists(Cache):
-        print("ERROR: %s already exists." % Cache)
-        return False
-    print("Copying %s, This make take a few minutes\n" % (FolderName))
-    try:
-        shutil.move(Source,Cache)
-    except OSError as why:
-        errors.extend(str(why))
-    if errors:
-        print("Directory not copied\nERRORS:")
-        for x in errors:
-            print("%s", x)
-        return False
-    
-    #Create symbolic link
-    if(exists(Source)):
-        print("%s Should have been moved, but wasn't",Source)
-        return False
-    
-    ShellSymLink = ["ln", "-s", Cache, Source]
-    
-    #print("Shell command:\n%s" % (ShellSymLink)) #TESTING
-    subprocess.Popen(ShellSymLink)
-    
-    #Add this file to the list of cached files
-    CacheFile = open(CacheDirectory+CachedFilesName,'a')
-    CacheFile.write(FolderName+'\n')
-    CacheFile.close()
-    
-    return True
-
-def uncache(Source, Cached):
-    '''
-    Source is a symlink to Cached
-    
-    Pseudocode:
-    Check that Source is a symlink. Return false if not
-    
-    Otherwise:
-    Remove source symlink
-    Move Cached to Source
-    Delete Cached
-    Remove Cached from the Cached List file
-    return true
-    '''  
-    CachedFileName = Cached.replace(CacheDirectory,"")
-    if not os.path.islink(Source):
-        return False
-    
-    RemoveSymLinkCommand = ['rm', '-f', Source] # NOTE: this removes the symlink, it doesn't delete any files
-    
-    
-    subprocess.Popen(RemoveSymLinkCommand)
-    os.wait()   # Wait until the child process has completed.
-                # Without wait() the next line may check if the symlink exists 
-                # before the command is ran to remove it.
-    if(exists(Source)):
-        print("%s Should have been moved, but wasn't" % Source)
-        return False
-    print("Copying %s, This make take a few minutes\n" % (CachedFileName))
-    try:
-        shutil.move(Cached, Source)
-    except OSError as why:
-        errors.extend(str(why))
-    if errors:
-        print("Directory not copied\nERRORS:")
-        for x in errors:
-            print("%s", x)
-        return False
-    #Update the cache list file
-    #Get all lines from the file
-    CacheFile = open(CacheDirectory+CachedFilesName, 'r')
-    CacheFileLines = []
-    line = CacheFile.readline()
-    while line:
-        CacheFileLines.append(line)
-        line = CacheFile.readline()
-    CacheFileLines.sort()
-    #Add back all lines except for the one just uncached
-    CacheFile.close()
-    CacheFile = open(CacheDirectory+CachedFilesName,'w')
-    for line in CacheFileLines:
-        if line.replace("\n","") != CachedFileName:
-            CacheFile.write(line)
-    CacheFile.close()
-    
-
-    return True
-    
 def main():
     global SourceDirectory
     global CacheDirectory
     
+    SourcesArgList = {'-s','-src','-source'}
+    CacheArgList = {'-c','-cache'}
+    SSDCache = Cache2SSD()
     if platform.system() != 'Linux':
         ans = raw_input("WARNING: Cache2SSD has only been tested on Linux. It may work on Mac OS X (as it is POSIX-compliant), but won't work on Windows. Would you like to continue (yes/no)? \n->")
         if ans not in {'y','yes'}:
             return
-    (SourceDirectory,CacheDirectory) = ReadConfigFile()
+    (SourceDirectory,CacheDirectory) = SSDCache.ReadConfigFile()
     # If there are arguments, parse them for commands:
     if len(sys.argv) > 1:
         for x in range(1,len(sys.argv)-1):
@@ -200,10 +226,12 @@ def main():
                 SourceDirectory = sys.argv[x+1]
             if sys.argv[x] in CacheArgList:
                 CacheDirectory = sys.argv[x+1]
-                
+    
+    SSDCache.SetCacheDirectory(CacheDirectory)
+    SSDCache.SetSourceDirectory(SourceDirectory)
     # If prompt for directories if not specified in arguments
-    if SourceDirectory == '': SourceDirectory = PromptSourceDirectory()
-    if CacheDirectory == '': CacheDirectory = PromptDestDirectory()
+    if SourceDirectory == '': SourceDirectory = SSDCache.PromptSourceDirectory()
+    if CacheDirectory == '': CacheDirectory = SSDCache.PromptCacheDirectory()
 
     print("Source %s\nCache: %s" % (SourceDirectory,CacheDirectory)) #TESTING
     for directory in {SourceDirectory, CacheDirectory}:  
@@ -220,10 +248,12 @@ def main():
         SourceDirectory += '/'
     if not (CacheDirectory.endswith('/')):
         CacheDirectory += '/'
+    
+    #SSDCache = Cache2SSD(SourceDirectory,CacheDirectory)
     SourceFilesList = []
     CachedFilesList = []
-    (SourceFilesList,CachedFilesList) = GetFilesList(SourceDirectory, CacheDirectory)
-    if(len(SourceFilesList) == 0):
+    (SourceFilesList,CachedFilesList) = SSDCache.GetFilesList()
+    if(len(SourceFilesList) == 0 and len(CachedFilesList) == 0):
         print("Source directory %s is empty, exiting" % (SourceDirectory))
         return
     #Display list of choices
@@ -242,7 +272,7 @@ def main():
     elif(Choice < len(SourceFilesList)): # If Choice is among cached
         SourcePath = SourceDirectory+SourceFilesList[Choice]
         CachePath = CacheDirectory+SourceFilesList[Choice]
-        if cache(SourcePath,CachePath):
+        if SSDCache.cache(SourcePath,CachePath):
             print("COMPLETE %s is now cached." % (SourcePath))
         
         else :
@@ -253,7 +283,7 @@ def main():
         SourcePath = SourceDirectory+CachedFilesList[Choice]
         CachePath = CacheDirectory+CachedFilesList[Choice]
 
-        if uncache(SourcePath, CachePath):
+        if SSDCache.uncache(SourcePath, CachePath):
             print("COMPLETE %s returned." % (CachePath))
         else:
             print("Not cached.")
