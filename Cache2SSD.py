@@ -5,12 +5,21 @@ Written by Alex Riley <alex@riley.cc>
 Created 21 February 2015
 Last Modified 21 February 2015
 
-
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; (version 2) 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 '''
+
 from os.path import isdir, exists
 
-import sys, os, shutil, platform
-
+import sys, os, shutil, platform, subprocess
 #Globals:
 errors = []
 SourcesArgList = {'-s','-src','-source'}
@@ -18,7 +27,9 @@ CacheArgList = {'-c','-cache'}
 SourceDirectory = ''
 CacheDirectory = ''
 ConfigFileName = '.Cache2SSD.config'
-CachedFilesName= '.Cache2SSD.Cachedlist'
+#The cached file is used to keep track of which folders are being cached on a drive
+#The file consists of folder names, seperated by newlines. It's stored in the cache directory
+CachedFilesName= '.Cache2SSD.Cachedlist' 
     
 def PromptSourceDirectory():
     return input("Where would you like to cache from? (e.g. 'Your steam folder'/steamapps/common)\n->")
@@ -35,10 +46,10 @@ def GetFilesList(SourceDir, CachedDir):
         while line:
             CachedFilesList.append(line.replace("\n",""))
             line = CacheFile.readline()
-            CacheFile.close()
-    
+        CacheFile.close()
+    CachedFilesList = [x for x in CachedFilesList if x in SourceFilesList]
     #Files that have been cached will appear in both the SourceFileslist and the CachedFilesList
-    #The following line removes all from SourceFilesList that are in CachedFilesList
+    #The following list comprehension removes all elements from SourceFilesList that are in CachedFilesList
     SourceFilesList = [x for x in SourceFilesList if x not in CachedFilesList] 
     return(SourceFilesList,CachedFilesList)
     
@@ -82,12 +93,12 @@ def ReadConfigFile():
         
         
 def cache(Source, Cache):
-    FileName = Cache.replace(CacheDirectory,"")
+    FolderName = Cache.replace(CacheDirectory,"") #String of the folder user selected (e.g. Half-Life)
     #Copy the directory from source to Cache    
     if exists(Cache):
         print("ERROR: %s already exists." % Cache)
         return False
-    
+    print("Copying %s, This make take a few minutes\n" % (FolderName))
     try:
         shutil.move(Source,Cache)
     except OSError as why:
@@ -103,17 +114,14 @@ def cache(Source, Cache):
         print("%s Should have been moved, but wasn't",Source)
         return False
     
-    ShellSymLink = "ln -s 'CACHEPATH' 'SOURCEPATH'"
-    ShellSymLink = ShellSymLink.replace("CACHEPATH", Cache)
-    ShellSymLink = ShellSymLink.replace("SOURCEPATH", Source)
+    ShellSymLink = ["ln", "-s", Cache, Source]
     
-    print("Shell command:\n%s" % (ShellSymLink)) #TESTING
-    
-    os.popen(ShellSymLink)
+    #print("Shell command:\n%s" % (ShellSymLink)) #TESTING
+    subprocess.Popen(ShellSymLink)
     
     #Add this file to the list of cached files
     CacheFile = open(CacheDirectory+CachedFilesName,'a')
-    CacheFile.write(FileName+'\n')
+    CacheFile.write(FolderName+'\n')
     CacheFile.close()
     
     return True
@@ -136,15 +144,17 @@ def uncache(Source, Cached):
     if not os.path.islink(Source):
         return False
     
-    RemoveSymLinkCommand = "rm -f 'SOURCE'" # NOTE: this removes the symlink, it doesn't delete any files
-    RemoveSymLinkCommand = RemoveSymLinkCommand.replace("SOURCE", Source)
-    os.popen(RemoveSymLinkCommand)
-    os.wait() # popen() opens a child process which runs independently, without wait() if(exists(source)) may run before the symlink is removed 
+    RemoveSymLinkCommand = ['rm', '-f', Source] # NOTE: this removes the symlink, it doesn't delete any files
     
+    
+    subprocess.Popen(RemoveSymLinkCommand)
+    os.wait()   # Wait until the child process has completed.
+                # Without wait() the next line may check if the symlink exists 
+                # before the command is ran to remove it.
     if(exists(Source)):
         print("%s Should have been moved, but wasn't" % Source)
         return False
-    
+    print("Copying %s, This make take a few minutes\n" % (CachedFileName))
     try:
         shutil.move(Cached, Source)
     except OSError as why:
@@ -162,6 +172,7 @@ def uncache(Source, Cached):
     while line:
         CacheFileLines.append(line)
         line = CacheFile.readline()
+    CacheFileLines.sort()
     #Add back all lines except for the one just uncached
     CacheFile.close()
     CacheFile = open(CacheDirectory+CachedFilesName,'w')
@@ -178,16 +189,16 @@ def main():
     global CacheDirectory
     
     if platform.system() != 'Linux':
-        ans = raw_input("WARNING: Cache2SSD has only been tested on Linux. It may work on Mac OS X (as it is POSIX-compliant), but  won't work on Windows. Would you like to continue (yes/no)? \n->")
+        ans = raw_input("WARNING: Cache2SSD has only been tested on Linux. It may work on Mac OS X (as it is POSIX-compliant), but won't work on Windows. Would you like to continue (yes/no)? \n->")
         if ans not in {'y','yes'}:
             return
     (SourceDirectory,CacheDirectory) = ReadConfigFile()
     # If there are arguments, parse them for commands:
     if len(sys.argv) > 1:
         for x in range(1,len(sys.argv)-1):
-            if sys.argv[x] in SourcesArgList and SourceDirectory == '':
+            if sys.argv[x] in SourcesArgList:
                 SourceDirectory = sys.argv[x+1]
-            if sys.argv[x] in CacheArgList and CacheDirectory == '':
+            if sys.argv[x] in CacheArgList:
                 CacheDirectory = sys.argv[x+1]
                 
     # If prompt for directories if not specified in arguments
@@ -217,7 +228,7 @@ def main():
         return
     #Display list of choices
     # Note: Starting the count at 1 for the user, adjusting the users input accordingly
-    # (If user selects '7' from the list shown, it's actually dirs[6])
+    # 
     print("Uncached Directories (Enter number to cache):")
     for x in range(len(SourceFilesList)):
         print("%i: %s" % (x+1,SourceFilesList[x])) 
@@ -232,10 +243,10 @@ def main():
         SourcePath = SourceDirectory+SourceFilesList[Choice]
         CachePath = CacheDirectory+SourceFilesList[Choice]
         if cache(SourcePath,CachePath):
-            input("COMPLETE %s is now cached. Press enter to exit." % (SourcePath))
+            print("COMPLETE %s is now cached." % (SourcePath))
         
         else :
-            input("Not cached. Press enter to exit")
+            print("ERROR: Not cached.")
       
     elif(Choice >= len(SourceFilesList)): # If choice is to uncache
         Choice -= (len(SourceFilesList))
@@ -243,9 +254,9 @@ def main():
         CachePath = CacheDirectory+CachedFilesList[Choice]
 
         if uncache(SourcePath, CachePath):
-            input("COMPLETE %s returned. Press enter to exit" % (CachePath))
+            print("COMPLETE %s returned." % (CachePath))
         else:
-            input("Not cached. Press enter to exit")
+            print("Not cached.")
     return
     
     
