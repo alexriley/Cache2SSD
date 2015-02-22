@@ -32,9 +32,9 @@ class Cache2SSD:
     #The file consists of folder names, separated by newlines. It's stored in the cache directory
     CachedFilesName= '.Cache2SSD.Cachedlist' 
     def RunCLImode(self):
-        # If prompt for directories if not specified in arguments
-        if self.Source == '': self.Source = self.PromptSourceDirectory()
-        if self.Cache == '': self.Cache = self.PromptCacheDirectory()
+        # If prompt for directories if not specified already
+        if self.Source == '': self.PromptSourceDirectory()
+        if self.Cache == '': self.PromptCacheDirectory()
     
         print("Source %s\nCache: %s" % (self.Source,self.Cache))
         for directory in {self.Source, self.Cache}:  
@@ -143,9 +143,9 @@ class Cache2SSD:
                         return ('','')
                     CacheDirectory = line.replace("CACHE=","").replace("\n","")
             line = ConfigFile.readline()
-        if not (SourceDirectory.endswith('/')):
+        if not SourceDirectory.endswith('/') and SourceDirectory != '':
             SourceDirectory += '/'
-        if not (CacheDirectory.endswith('/')):
+        if not CacheDirectory.endswith('/') and SourceDirectory != '':
             CacheDirectory += '/'
         #Check values:
         if SourceDirectory != '' or CacheDirectory != '':
@@ -270,7 +270,7 @@ class Cache2SSD:
 
 def main():
     if platform.system() != 'Linux':
-        ans = raw_input("WARNING: Cache2SSD has only been tested on Linux. It may work on Mac OS X (as it is POSIX-compliant), but won't work on Windows. Would you like to continue (yes/no)? \n->")
+        ans = input("WARNING: Cache2SSD has only been tested on Linux. It may work on Mac OS X (as it is POSIX-compliant), but won't work on Windows. Would you like to continue (yes/no)? \n->")
         if ans not in {'y','yes'}:
             return
     SSDCache = Cache2SSD()
