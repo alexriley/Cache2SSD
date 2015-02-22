@@ -20,6 +20,7 @@ I took the idea from a program called 'Steam Mover', which I used for the same p
 This will probably work on Mac OS X with few revisions. I haven't tested in on a Mac, so I have no means of confirming this.
 
 Command line arguments: (Optional, if no directories are specified, the user will be prompted)
+
 {python3 Cache2SSD.py} {'-s','-src','-source'} {Source Folder} {'-c','-cache'} {Cache Folder}
 
 Or, set Source and cache folders in a file called '.Cache2SSD.config' in the same directory as Cache2SSD.py with 2 lines as follows:
@@ -41,5 +42,7 @@ Use absolute locations for Source and Cache directories (E.g. if Cache2SSD is in
 
 TODO:
 GUI, probably in tkinter
+
 Test for free space when copying files
+
 Save a config set within the script
