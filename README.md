@@ -25,8 +25,11 @@ Command line arguments: (Optional, if no directories are specified, the user wil
 
 Or, set Source and cache folders in a file called '.Cache2SSD.config' in the same directory as Cache2SSD.py with 2 lines as follows:
 '
+
 SOURCE=/BiggerDrive/Steam/steamapps/common/
+
 CACHE=/SSDcache/
+
 '
 
 If directories are specified in command line arguments and in a file, the command line arguments are used.
