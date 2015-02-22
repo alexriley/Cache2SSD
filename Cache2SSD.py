@@ -40,7 +40,7 @@ class Cache2SSD:
         if self.Source == '': self.Source = self.PromptSourceDirectory()
         if self.Cache == '': self.Cache = self.PromptCacheDirectory()
     
-        print("Source %s\nCache: %s" % (self.Source,self.Cache)) #TESTING
+        print("Source %s\nCache: %s" % (self.Source,self.Cache))
         for directory in {self.Source, self.Cache}:  
             if exists(directory):
                 if not isdir(directory): 
