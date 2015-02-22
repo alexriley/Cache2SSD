@@ -17,7 +17,7 @@ What it does: Easily copy a folder to a faster drive. By using symbolic links, i
 
 I took the idea from a program called 'Steam Mover', which I used for the same purpose when I used Windows (available at http://www.traynier.com/software/steammover).
 
-This will probably work on Mac OS X with few revisions. I haven't tested in on a Mac, so I have no means of confirming this.
+This will probably work on Mac OS X with few revisions. I haven't tested it on a Mac, so I have no means of confirming this.
 
 Command line arguments: (Optional, if no directories are specified, the user will be prompted)
 
