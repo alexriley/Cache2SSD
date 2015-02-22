@@ -164,7 +164,7 @@ class Cache2SSD:
         
         #FolderName = Cache.replace(CacheDirectory,"") #String of the folder user selected (e.g. Half-Life)
         
-        #FolderName is everything in Cache after the last occurrence of '/' to the end:
+        #FolderName is Cache from 1 character after the last occurrence of '/' to the end:
         #e.g. if cache is /BigDrive/Half-Life, Folder name is Half-Life
         FolderName = Cache[Cache[0:len(Cache)-1].rindex("/")+1:]
         #Copy the directory from source to Cache    
@@ -214,9 +214,9 @@ class Cache2SSD:
         return true
         '''  
         #CachedFolderName = Cache.replace(CacheDirectory,"")
-        #CachedFolderName is everything in Cache after the last occurrence of '/' to the end:
+        #CachedFolderName is Cache from 1 character after the last occurrence of '/' to the end::
         #e.g. if cache is /BigDrive/Half-Life, Folder name is Half-Life
-        CachedFolderName = Cache[Cache[0:len(Cache)-1].rindex("/")+1:] #ADDED, TEST THIS
+        CachedFolderName = Cache[Cache[0:len(Cache)-1].rindex("/")+1:]
         if not os.path.islink(Source):
             return False
          
