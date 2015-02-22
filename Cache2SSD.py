@@ -26,11 +26,7 @@ class Cache2SSD:
         self.Source = SourceDirectory
         self.Cache = CacheDirectory
     
-    
-    #Globals:
     errors = []
-    SourcesArgList = {'-s','-src','-source'}
-    CacheArgList = {'-c','-cache'}
     ConfigFileName = '.Cache2SSD.config'
     #The cached file is used to keep track of which folders are being cached on a drive
     #The file consists of folder names, separated by newlines. It's stored in the cache directory
