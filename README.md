@@ -1,6 +1,6 @@
 Cache2SSD
 
-What it does: copies folder from a slower HDD to a faster HDD and back easily. I mainly wrote this for my own uses, I have a 60GB SSD which I would like to copy games to while playing and then copy back when no longer in use. I hope you may find it useful.
+What it does: copies folder from a slower HDD to a faster SSD and back easily. I mainly wrote this for my own uses, I have a 60GB SSD which I would like to copy games to while playing and then copy back when no longer in use. I hope you may find it useful.
 
 I took the idea from a program called 'Steam Mover', which I used for the same purpose when I used Windows (available at http://www.traynier.com/software/steammover).
 
