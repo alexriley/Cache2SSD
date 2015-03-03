@@ -1,19 +1,6 @@
 Cache2SSD
 
-License: GPLv2. Please see LICENSE for the terms.
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; (version 2) 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-You should have received a copy of the GNU General Public License along
-with this program; if not, write to the Free Software Foundation, Inc.,
-51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-What it does: Easily copy a folder to a faster drive. By using symbolic links, it appears that the folder hasn't moved to any program that accesses it. When you need that space back, run Cache2SSD again to copy it back and remove the symbolic link.
+What it does: copies folder from a slower HDD to a faster HDD and back easily. I mainly wrote this for my own uses, I have a 60GB SSD which I would like to copy games to while playing and then copy back when no longer in use. I hope you may find it useful.
 
 I took the idea from a program called 'Steam Mover', which I used for the same purpose when I used Windows (available at http://www.traynier.com/software/steammover).
 
@@ -49,3 +36,15 @@ GUI, probably in tkinter
 Test for free space when copying files
 
 Save a config set within the script
+
+License: GPLv2.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; (version 2) 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
